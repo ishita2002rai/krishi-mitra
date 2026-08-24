@@ -109,54 +109,9 @@ a general-purpose crop-advisory chatbot that redirects you to the right tab for
 anything it can't answer directly (e.g. "analyze my photo" -> Diagnose tab) and knows
 which crops are and aren't supported.
 
-## Known limitations
+## Future enhancements
 
-Found through real testing, not just theoretical — kept here rather than hidden, since
-they're legitimate discussion points for an evaluation:
-
-- **Visually-similar diseases can still get confused.** Early blight's textbook
-  "bullseye" lesion description occasionally gets matched to the literally-named
-  "Target Spot" class by the LLM refinement step, since it reasons from disease names
-  and general knowledge rather than a grounded symptom database.
-- **The LLM can misattribute a farmer's answer** if it doesn't address the specific
-  clarifying question asked — the prompt now explicitly requires it to say so and fall
-  back to the classifier's top candidate rather than fabricate a match, but this relies
-  on the model following that instruction, not a hard constraint.
-- **11 of PlantVillage's 14 crop species** — Blueberry, Raspberry, and Soybean are
-  excluded because this dataset only has "healthy" images for them (no disease
-  examples), so a model trained on them could never actually diagnose anything for
-  those three crops.
-- **Some crops have far less training data than others** (e.g. Potato___healthy has
-  ~150 images vs. Orange's ~5,500 for its one class) — class weighting compensates
-  during training, but very sparse classes will still be less reliable than
-  well-represented ones like tomato.
-- **Treatment plans don't distinguish disease category.** For a wood/vascular disease
-  like grapevine Esca, the LLM generated a plausible-looking chemical spray regimen,
-  but in real viticulture practice curative fungicides have limited effect on
-  established wood infections -- management is almost entirely cultural (pruning-wound
-  protection, removing infected wood). The model reasons from general agronomy
-  knowledge per-diagnosis, not a disease-category-aware framework that would flag
-  "this is a vascular disease, de-emphasize curative chemical treatment."
-- **Out-of-scope crop detection is a heuristic, not a hard guarantee.** It flags when
-  the classifier's confident candidates disagree on crop species, which catches clear
-  cases, but a genuinely unfamiliar crop that happens to resemble a supported one could
-  still get a wrong diagnosis with no warning.
-
-## Development notes
-
-A few real issues were found through actual testing (not just code review) and fixed
-during development -- kept here since the debugging process is itself part of the
-engineering story:
-
-- A Dashboard chart crashed in the browser (`pd.cut()` producing `Interval` objects
-  that Streamlit's chart backend can't serialize) -- fixed and the fix was verified by
-  replicating Altair's exact validation call outside Streamlit before shipping it again.
-- Downloaded PDF reports were full of stray "?" characters -- traced to typographic
-  Unicode space variants the LLM uses that `fpdf2`'s fonts can't render; fixed generally
-  via `unicodedata` category checks rather than hand-listing every space variant.
-- The chat widget appeared to "lose context" after a few turns. Rather than assuming a
-  session-state bug, the exact failing conversation was replayed directly against the
-  LLM backend and the literal message list sent on the failing call was inspected --
-  confirming the history *was* being sent correctly, and the model itself just wasn't
-  using it well. Fixed with an explicit prompt reinforcement, then re-verified against
-  the original failing conversation end-to-end.
+- Expand coverage beyond the current 11 crops as more labeled data becomes available.
+- Disease-category-aware treatment reasoning (e.g. distinguishing vascular/wood
+  diseases from foliar diseases) for even more tailored treatment plans.
+- Persistent, multi-session chat history for the advisory chatbot.
