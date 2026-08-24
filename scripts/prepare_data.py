@@ -1,4 +1,4 @@
-"""Download the PlantVillage dataset from Kaggle and split the tomato
+"""Download the PlantVillage dataset from Kaggle and split the configured
 classes into data/processed/{train,val} for scripts/train_classifier.py.
 
 Usage:
@@ -13,10 +13,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from krishi_mitra.config import (
+    PLANT_CLASSES,
     PROCESSED_DIR,
     RAW_DIR,
     SEED,
-    TOMATO_CLASSES,
     TRAIN_DIR,
     VAL_DIR,
     VAL_SPLIT,
@@ -70,14 +70,14 @@ def find_color_dir(raw_dir: Path) -> Path:
 
 
 def collect_class_images(color_dir: Path) -> dict:
-    """Map each TOMATO_CLASSES entry to the list of image paths in its matching folder."""
+    """Map each PLANT_CLASSES entry to the list of image paths in its matching folder."""
     normalized_to_actual = {
         normalize_class_name(p.name): p for p in color_dir.iterdir() if p.is_dir()
     }
 
     class_to_images = {}
     missing = []
-    for class_name in TOMATO_CLASSES:
+    for class_name in PLANT_CLASSES:
         folder = normalized_to_actual.get(normalize_class_name(class_name))
         if folder is None:
             missing.append(class_name)

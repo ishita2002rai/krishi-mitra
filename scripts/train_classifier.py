@@ -1,4 +1,4 @@
-"""Train a MobileNetV2 transfer-learning classifier on the tomato PlantVillage
+"""Train a MobileNetV2 transfer-learning classifier on the PlantVillage
 classes prepared by scripts/prepare_data.py. Saves the trained model plus
 accuracy/precision/recall/F1 metrics and a confusion matrix for the
 evaluation section.
@@ -26,7 +26,7 @@ FINE_TUNE_EPOCHS = 8
 FINE_TUNE_AT_LAYER = 100  # unfreeze MobileNetV2 layers from this index onward
 LEARNING_RATE = 1e-3
 FINE_TUNE_LEARNING_RATE = 1e-5
-CHECKPOINT_PATH = MODELS_DIR / "mobilenetv2_tomato.keras"
+CHECKPOINT_PATH = MODELS_DIR / "mobilenetv2_plants.keras"
 
 
 def load_datasets():

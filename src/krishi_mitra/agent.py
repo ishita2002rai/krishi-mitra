@@ -23,7 +23,7 @@ from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
 
 from krishi_mitra.classifier import predict_topk
-from krishi_mitra.config import CONFIDENCE_THRESHOLD, GROQ_MODEL, TOP_K, TREATMENT_DISCLAIMER, display_name
+from krishi_mitra.config import CONFIDENCE_THRESHOLD, GROQ_MODEL, TOP_K, TREATMENT_DISCLAIMER, crop_name, display_name
 from krishi_mitra.weather import fetch_weather_summary, format_summary
 
 
@@ -72,7 +72,7 @@ def ask_clarifying_question(state: AgentState) -> dict:
         f"- {display_name(c['class'])} ({c['confidence']:.0%} confidence)" for c in state["top_k"]
     )
     prompt = (
-        "You are an agronomy assistant helping diagnose a tomato plant disease from a leaf "
+        "You are an agronomy assistant helping diagnose a plant disease from a leaf "
         "photo. A CNN classifier is unsure between these candidates:\n"
         f"{candidates}\n\n"
         "Ask the farmer ONE short, simple, non-technical question (a single sentence) whose "
@@ -89,7 +89,7 @@ def refine_with_answer(state: AgentState) -> dict:
         for c in state["top_k"]
     )
     prompt = (
-        "You are an agronomy assistant. A CNN classifier proposed these tomato disease "
+        "You are an agronomy assistant. A CNN classifier proposed these plant disease "
         f"candidates:\n{candidates}\n\n"
         f'You asked the farmer: "{state["clarifying_question"]}"\n'
         f'They answered: "{state["user_answer"]}"\n\n'
@@ -124,7 +124,7 @@ def gather_weather(state: AgentState) -> dict:
 
 def assess_risk(state: AgentState) -> dict:
     prompt = (
-        "You are an agronomy assistant. A tomato plant was diagnosed with "
+        f"You are an agronomy assistant. A {crop_name(state['diagnosis'])} plant was diagnosed with "
         f"{display_name(state['diagnosis'])}.\n\n"
         f"{format_summary(state['weather'])}\n\n"
         "In 2-3 sentences, assess whether these current and upcoming weather conditions are "
@@ -137,7 +137,7 @@ def assess_risk(state: AgentState) -> dict:
 
 def generate_treatment_plan(state: AgentState) -> dict:
     prompt = (
-        "You are an agronomy assistant. A tomato plant was diagnosed with "
+        f"You are an agronomy assistant. A {crop_name(state['diagnosis'])} plant was diagnosed with "
         f"{display_name(state['diagnosis'])}.\n\n"
         f"Risk assessment: {state['risk_assessment']}\n\n"
         "Write a short treatment plan for the farmer with two sections:\n"

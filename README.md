@@ -1,6 +1,6 @@
 # Krishi-Mitra
 
-An agentic AI crop advisory assistant for farmers. Upload a photo of a tomato leaf and
+An agentic AI crop advisory assistant for farmers. Upload a photo of a crop leaf and
 the system runs a full perceive → reason → gather-context → decide → act loop: it
 classifies the disease, asks a clarifying question when it isn't confident, checks
 local weather to assess spread risk, and produces a treatment plan — then lets you
@@ -13,23 +13,26 @@ was built, demoed, and tested before starting the next.
 
 | # | Increment | What it does |
 |---|---|---|
-| 1 | **Disease classifier** | MobileNetV2 transfer learning on PlantVillage (10 tomato classes). 92.1% validation accuracy. |
+| 1 | **Disease classifier** | MobileNetV2 transfer learning on PlantVillage -- 35 classes across 11 crops (apple, cherry, corn, grape, orange, peach, pepper, potato, squash, strawberry, tomato). |
 | 2 | **Clarifying-questions agent** | A LangGraph loop asks one follow-up question via Groq when the classifier's top prediction is below 85% confidence, then refines the diagnosis from the answer. |
 | 3 | **Weather-aware risk reasoning** | Fetches current + 3-day forecast weather (Open-Meteo) for the farmer's location and reasons about whether conditions will accelerate or slow disease spread. |
 | 4 | **Treatment plan + app + history** | Generates an organic + chemical treatment plan (metric dosages), a Streamlit UI tying the whole loop together, and SQLite-backed scan history. |
 | 5 | **Dashboard, feedback loop, PDF export, chatbot** | Farm-wide analytics (interactive charts), a 1–5 treatment-outcome rating that closes the agentic loop, plot/field tagging, per-scan PDF reports, and a general-purpose chat widget. |
 
-## Results (Increment 1)
+## Results (Increment 1, 35-class multi-crop model)
 
 | Metric | Value |
 |---|---|
-| Validation accuracy | 92.1% |
-| Macro F1 | 0.906 |
-| Weighted F1 | 0.921 |
+| Validation accuracy | 96.4% |
+| Macro F1 | 0.967 |
+| Weighted F1 | 0.965 |
 
-Per-class F1 ranges from 0.82 (Early blight, Target Spot — the visually similar,
-harder-to-separate classes) to 0.98 (Yellow Leaf Curl Virus). Full breakdown in
-`outputs/metrics.json`, confusion matrix in `outputs/confusion_matrix.png`.
+Cross-crop classes are easy to tell apart (many at F1 1.00 -- an apple leaf and a corn
+leaf don't look alike). Almost all the remaining confusion is *within* tomato's own
+10 sub-classes, the visually similar diseases first trained on: Target Spot (F1 0.83)
+and Early blight (F1 0.88) are still the hardest pair, plus Potato___healthy (F1 0.89,
+only 30 validation images). Full breakdown in `outputs/metrics.json`, confusion matrix
+in `outputs/confusion_matrix.png`.
 
 ## Tech stack
 
@@ -116,5 +119,11 @@ they're legitimate discussion points for an evaluation:
   clarifying question asked — the prompt now explicitly requires it to say so and fall
   back to the classifier's top candidate rather than fabricate a match, but this relies
   on the model following that instruction, not a hard constraint.
-- **Tomato-only, 10 PlantVillage classes** — deliberately scoped down per the original
-  brief; extending to other crops would need retraining on a different dataset.
+- **11 of PlantVillage's 14 crop species** — Blueberry, Raspberry, and Soybean are
+  excluded because this dataset only has "healthy" images for them (no disease
+  examples), so a model trained on them could never actually diagnose anything for
+  those three crops.
+- **Some crops have far less training data than others** (e.g. Potato___healthy has
+  ~150 images vs. Orange's ~5,500 for its one class) — class weighting compensates
+  during training, but very sparse classes will still be less reliable than
+  well-represented ones like tomato.

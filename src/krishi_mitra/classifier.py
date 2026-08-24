@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from krishi_mitra.config import IMG_SIZE, MODELS_DIR, TOP_K
 
-MODEL_PATH = MODELS_DIR / "mobilenetv2_tomato.keras"
+MODEL_PATH = MODELS_DIR / "mobilenetv2_plants.keras"
 CLASS_NAMES_PATH = MODELS_DIR / "class_names.json"
 
 

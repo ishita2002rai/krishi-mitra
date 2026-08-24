@@ -1,4 +1,4 @@
-"""CLI demo for the agent loop: classify a tomato leaf photo, ask one
+"""CLI demo for the agent loop: classify a leaf photo, ask one
 clarifying question if the classifier isn't confident (Increment 2), then --
 for any non-healthy diagnosis -- fetch local weather, assess disease-spread
 risk (Increment 3), and generate a treatment plan (Increment 4).
@@ -18,7 +18,7 @@ from krishi_mitra.weather import format_summary
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("image_path", help="Path to a tomato leaf photo")
+    parser.add_argument("image_path", help="Path to a crop leaf photo")
     parser.add_argument("location", help="Farm location for weather lookup, e.g. 'Pune, India'")
     args = parser.parse_args()
 

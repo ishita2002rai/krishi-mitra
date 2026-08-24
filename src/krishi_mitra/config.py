@@ -18,11 +18,41 @@ DB_DIR = PROJECT_ROOT / "db"
 DB_PATH = DB_DIR / "scans.db"
 UPLOADS_DIR = DB_DIR / "uploads"
 
-# Canonical PlantVillage tomato class names (as used in the "color" split of
-# the abdallahalidev/plantvillage-dataset Kaggle mirror). prepare_data.py
-# matches folders to these names case/underscore-insensitively, since some
-# mirrors use "Tomato_Bacterial_spot" instead of "Tomato___Bacterial_spot".
-TOMATO_CLASSES = [
+# Canonical PlantVillage class names (as used in the "color" split of the
+# abdallahalidev/plantvillage-dataset Kaggle mirror). prepare_data.py matches
+# folders to these names case/underscore-insensitively, since some mirrors use
+# "Tomato_Bacterial_spot" instead of "Tomato___Bacterial_spot".
+#
+# Covers 11 crop species / 35 classes. Excludes Blueberry, Raspberry, and
+# Soybean, which only have "healthy" images in this dataset (no disease
+# examples), so a model trained on them could never actually diagnose
+# anything for those crops.
+PLANT_CLASSES = [
+    "Apple___Apple_scab",
+    "Apple___Black_rot",
+    "Apple___Cedar_apple_rust",
+    "Apple___healthy",
+    "Cherry_(including_sour)___Powdery_mildew",
+    "Cherry_(including_sour)___healthy",
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
+    "Corn_(maize)___Common_rust_",
+    "Corn_(maize)___Northern_Leaf_Blight",
+    "Corn_(maize)___healthy",
+    "Grape___Black_rot",
+    "Grape___Esca_(Black_Measles)",
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+    "Grape___healthy",
+    "Orange___Haunglongbing_(Citrus_greening)",
+    "Peach___Bacterial_spot",
+    "Peach___healthy",
+    "Pepper,_bell___Bacterial_spot",
+    "Pepper,_bell___healthy",
+    "Potato___Early_blight",
+    "Potato___Late_blight",
+    "Potato___healthy",
+    "Squash___Powdery_mildew",
+    "Strawberry___Leaf_scorch",
+    "Strawberry___healthy",
     "Tomato___Bacterial_spot",
     "Tomato___Early_blight",
     "Tomato___Late_blight",
@@ -48,7 +78,13 @@ def normalize_class_name(name: str) -> str:
 
 def display_name(class_name: str) -> str:
     """Human-readable form of a PlantVillage class name, e.g. 'Tomato___Early_blight' -> 'Early blight'."""
-    return class_name.split("___")[-1].replace("_", " ")
+    return class_name.split("___")[-1].replace("_", " ").strip()
+
+
+def crop_name(class_name: str) -> str:
+    """Human-readable crop name from a PlantVillage class name, e.g.
+    'Corn_(maize)___Common_rust_' -> 'Corn (maize)', 'Pepper,_bell___healthy' -> 'Pepper, bell'."""
+    return class_name.split("___")[0].replace("_", " ").strip()
 
 
 # Increment 2: agent loop

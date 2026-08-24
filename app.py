@@ -123,7 +123,7 @@ def location_picker():
 
 
 def diagnose_tab():
-    uploaded = st.file_uploader("Tomato leaf photo", type=["jpg", "jpeg", "png"])
+    uploaded = st.file_uploader("Crop leaf photo", type=["jpg", "jpeg", "png"])
     place = location_picker()
     plot_name = st.text_input("Plot/field name (optional)", key="plot_name_input") or None
 
@@ -348,7 +348,7 @@ def chat_widget():
 
 
 st.title("\U0001f331 Krishi-Mitra")
-st.caption("Agentic crop advisory assistant -- upload a tomato leaf photo to get started.")
+st.caption("Agentic crop advisory assistant -- upload a leaf photo to get started.")
 
 diagnose, dashboard, history = st.tabs(["Diagnose", "Dashboard", "History"])
 with diagnose:
