@@ -17,7 +17,7 @@ from streamlit_searchbox import st_searchbox
 
 from krishi_mitra.agent import build_graph
 from krishi_mitra.chat import get_chat_reply
-from krishi_mitra.config import display_name
+from krishi_mitra.config import SUPPORTED_CROPS, display_name
 from krishi_mitra.db import get_history, save_image, save_scan, update_outcome
 from krishi_mitra.report import build_scan_report_pdf
 from krishi_mitra.weather import format_place, format_summary, search_locations
@@ -124,6 +124,7 @@ def location_picker():
 
 def diagnose_tab():
     uploaded = st.file_uploader("Crop leaf photo", type=["jpg", "jpeg", "png"])
+    st.caption(f"Supported crops: {', '.join(SUPPORTED_CROPS)}")
     place = location_picker()
     plot_name = st.text_input("Plot/field name (optional)", key="plot_name_input") or None
 

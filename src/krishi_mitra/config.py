@@ -87,6 +87,11 @@ def crop_name(class_name: str) -> str:
     return class_name.split("___")[0].replace("_", " ").strip()
 
 
+# Sorted, de-duplicated crop names covered by PLANT_CLASSES -- used to tell farmers
+# what the app supports and to help the agent notice likely out-of-scope photos.
+SUPPORTED_CROPS = sorted({crop_name(c) for c in PLANT_CLASSES})
+
+
 # Increment 2: agent loop
 TOP_K = 3
 CONFIDENCE_THRESHOLD = 0.85  # below this top-1 softmax confidence, ask a clarifying question

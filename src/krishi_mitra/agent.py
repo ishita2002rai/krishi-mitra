@@ -23,7 +23,15 @@ from langchain_groq import ChatGroq
 from langgraph.graph import END, StateGraph
 
 from krishi_mitra.classifier import predict_topk
-from krishi_mitra.config import CONFIDENCE_THRESHOLD, GROQ_MODEL, TOP_K, TREATMENT_DISCLAIMER, crop_name, display_name
+from krishi_mitra.config import (
+    CONFIDENCE_THRESHOLD,
+    GROQ_MODEL,
+    SUPPORTED_CROPS,
+    TOP_K,
+    TREATMENT_DISCLAIMER,
+    crop_name,
+    display_name,
+)
 from krishi_mitra.weather import fetch_weather_summary, format_summary
 
 
@@ -67,7 +75,35 @@ def finalize_high_confidence(state: AgentState) -> dict:
     }
 
 
+CROP_DISAGREEMENT_THRESHOLD = 0.05  # ignore near-zero tail candidates when comparing crops
+
+
+def _spans_multiple_crops(top_k) -> bool:
+    """True if the candidates with non-trivial probability disagree on the crop
+    species itself, not just the disease -- a stronger sign of a possibly-
+    unsupported/out-of-scope photo than low confidence alone, since a softmax
+    classifier can be confidently wrong on inputs unlike anything it was trained on.
+    Restricted to candidates above CROP_DISAGREEMENT_THRESHOLD: with 35 classes, a
+    dominant top-1 (e.g. 99.99%) still leaves ~0.01% spread arbitrarily across the
+    other 34 classes, which can span unrelated crops by pure noise, not genuine
+    ambiguity -- counting those would false-flag confident, correct diagnoses."""
+    meaningful = [c for c in top_k if c["confidence"] >= CROP_DISAGREEMENT_THRESHOLD] or top_k[:1]
+    return len({crop_name(c["class"]) for c in meaningful}) > 1
+
+
 def ask_clarifying_question(state: AgentState) -> dict:
+    top_k = state["top_k"]
+    if _spans_multiple_crops(top_k):
+        guessed_crops = ", ".join(sorted({crop_name(c["class"]) for c in top_k}))
+        supported = ", ".join(SUPPORTED_CROPS)
+        return {
+            "clarifying_question": (
+                f"This photo doesn't clearly match one crop -- our best guesses span different "
+                f"plants ({guessed_crops}). This app currently supports: {supported}. "
+                "Can you confirm what crop this is?"
+            )
+        }
+
     candidates = "\n".join(
         f"- {display_name(c['class'])} ({c['confidence']:.0%} confidence)" for c in state["top_k"]
     )
@@ -94,10 +130,14 @@ def refine_with_answer(state: AgentState) -> dict:
         f'You asked the farmer: "{state["clarifying_question"]}"\n'
         f'They answered: "{state["user_answer"]}"\n\n'
         "Pick exactly ONE candidate as the final diagnosis using its EXACT class name from "
-        "the list above (the part before the colon). Base your reasoning ONLY on symptoms "
-        "the farmer actually stated -- never claim they confirmed or described something "
-        "they did not mention. If their answer does not clearly address the question, say "
-        "so in the reasoning and fall back to the classifier's highest-confidence candidate. "
+        "the list above (the part before the colon) -- even if the farmer's answer suggests "
+        "their crop isn't one of these candidates or isn't supported by this app "
+        f"(supported crops: {', '.join(SUPPORTED_CROPS)}), since that's the closest available "
+        "guess; in that case, clearly say in the reasoning that the crop may not be supported "
+        "and the diagnosis is unreliable. Otherwise, base your reasoning ONLY on symptoms the "
+        "farmer actually stated -- never claim they confirmed or described something they did "
+        "not mention. If their answer does not clearly address the question, say so in the "
+        "reasoning and fall back to the classifier's highest-confidence candidate. "
         "Respond in exactly this format:\n"
         "DIAGNOSIS: <exact class name>\n"
         "REASONING: <one sentence>"
@@ -153,7 +193,10 @@ def generate_treatment_plan(state: AgentState) -> dict:
 
 
 def _route_after_classify(state: AgentState) -> str:
-    return "finalize_high_confidence" if state["confidence"] >= CONFIDENCE_THRESHOLD else "ask_clarifying_question"
+    confident_and_consistent = state["confidence"] >= CONFIDENCE_THRESHOLD and not _spans_multiple_crops(
+        state["top_k"]
+    )
+    return "finalize_high_confidence" if confident_and_consistent else "ask_clarifying_question"
 
 
 def _route_entry(state: AgentState) -> str:
