@@ -17,3 +17,7 @@ requests==2.32.3
 # --- Increment 4: treatment generation + frontend + storage ---
 streamlit==1.39.0
 streamlit-searchbox==0.1.24  # live-as-you-type location autocomplete in app.py
+
+# --- Increment 5: dashboard, feedback loop, plot tracking, PDF export ---
+fpdf2==2.8.8  # per-scan PDF report export
+# pandas ships as a streamlit dependency already; used directly for dashboard aggregation
