@@ -1,0 +1,18 @@
+# --- Increment 1: disease classifier (data prep + training + evaluation) ---
+tensorflow==2.16.2
+tensorflow-metal==1.1.0 ; sys_platform == "darwin" and platform_machine == "arm64"  # optional GPU accel on Apple Silicon
+numpy==1.26.4
+pillow==10.4.0
+scikit-learn==1.5.2
+matplotlib==3.9.2
+seaborn==0.13.2
+kaggle==2.2.4  # needs 2.x for the new Kaggle access-token auth (KGAT_...); 1.6.x only understands username+key
+python-dotenv==1.0.1
+
+# --- Increment 2-3: agent loop + weather context ---
+langgraph==0.2.39
+langchain-groq==0.2.0
+requests==2.32.3
+
+# --- Increment 4: treatment generation + frontend + storage ---
+streamlit==1.39.0
