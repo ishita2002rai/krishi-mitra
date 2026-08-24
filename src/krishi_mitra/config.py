@@ -1,4 +1,5 @@
-"""Shared constants and paths for the Krishi-Mitra classifier (Increment 1)."""
+"""Shared constants and paths for the Krishi-Mitra classifier (Increment 1) and
+agent loop (Increment 2)."""
 
 from pathlib import Path
 
@@ -39,3 +40,16 @@ VAL_SPLIT = 0.2
 def normalize_class_name(name: str) -> str:
     """Collapse naming variants (___/_/space, case) to one comparable key."""
     return name.lower().replace("___", "_").replace(" ", "_").replace("-", "_")
+
+
+def display_name(class_name: str) -> str:
+    """Human-readable form of a PlantVillage class name, e.g. 'Tomato___Early_blight' -> 'Early blight'."""
+    return class_name.split("___")[-1].replace("_", " ")
+
+
+# Increment 2: agent loop
+TOP_K = 3
+CONFIDENCE_THRESHOLD = 0.85  # below this top-1 softmax confidence, ask a clarifying question
+# llama-3.3-70b-versatile was retired from Groq's catalog; gpt-oss-120b is the
+# closest available equivalent in capability tier.
+GROQ_MODEL = "openai/gpt-oss-120b"

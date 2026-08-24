@@ -8,7 +8,7 @@ Built iteratively/incrementally:
 
 1. **Increment 1 (done):** MobileNetV2 transfer-learning classifier for
    tomato diseases (PlantVillage dataset), with train/val evaluation. 92.1% val accuracy.
-2. **Increment 2:** LangGraph agent loop — clarifying questions on low-confidence predictions.
+2. **Increment 2 (done):** LangGraph agent loop — clarifying questions on low-confidence predictions.
 3. **Increment 3:** Add local weather context (Open-Meteo) to the agent's reasoning.
 4. **Increment 4:** Treatment plan generation (Groq LLM), Streamlit frontend, SQLite scan history.
 
@@ -45,11 +45,26 @@ python scripts/train_classifier.py
 - `outputs/training_history.png`
 - `data/processed/split_counts.json` — per-class train/val image counts
 
+## Setup (Increment 2)
+
+```bash
+# Get a free Groq API key from https://console.groq.com -> API Keys
+# and add it to .env (paste with a text editor -- never share this key in chat/logs):
+#   GROQ_API_KEY=...
+
+python scripts/run_agent.py path/to/leaf_photo.jpg
+```
+
+The agent classifies the photo (Increment 1's model). If the top prediction is below
+85% confidence, it asks one clarifying question via Groq, takes your answer on the CLI,
+and gives a final diagnosis + reasoning. High-confidence predictions skip the
+clarifying question entirely.
+
 ## Project layout
 
 ```
-src/krishi_mitra/    shared config + utils, importable as a package
-scripts/             standalone entry-point scripts (data prep, training)
+src/krishi_mitra/    shared config, classifier inference, agent graph -- importable as a package
+scripts/             standalone entry-point scripts (data prep, training, agent CLI)
 data/raw/            downloaded dataset (gitignored)
 data/processed/      train/val split used for training (gitignored)
 models/              saved model + class name mapping (gitignored)
