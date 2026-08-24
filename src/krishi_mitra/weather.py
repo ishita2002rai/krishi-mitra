@@ -9,6 +9,26 @@ GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 
+def _to_place(result: dict) -> dict:
+    return {
+        "name": result["name"],
+        "admin1": result.get("admin1", ""),
+        "country": result.get("country", ""),
+        "lat": result["latitude"],
+        "lon": result["longitude"],
+    }
+
+
+def search_locations(query: str, count: int = 5) -> list:
+    """Up to `count` candidate places matching a partial location name, for
+    disambiguating/autocompleting a farmer's location input (see app.py)."""
+    if len(query.strip()) < 3:
+        return []
+    response = requests.get(GEOCODING_URL, params={"name": query, "count": count}, timeout=10)
+    response.raise_for_status()
+    return [_to_place(r) for r in response.json().get("results") or []]
+
+
 def geocode(location: str) -> dict:
     """Resolve a free-text location (e.g. 'Pune, India') to lat/lon via Open-Meteo."""
     response = requests.get(GEOCODING_URL, params={"name": location, "count": 1}, timeout=10)
@@ -16,13 +36,20 @@ def geocode(location: str) -> dict:
     results = response.json().get("results")
     if not results:
         raise SystemExit(f"Could not find a location matching '{location}'. Try a nearby city name.")
-    top = results[0]
-    return {"name": top["name"], "country": top.get("country", ""), "lat": top["latitude"], "lon": top["longitude"]}
+    return _to_place(results[0])
 
 
-def fetch_weather_summary(location: str) -> dict:
-    """Current conditions + a short-term daily forecast for the given location."""
-    place = geocode(location)
+def format_place(place: dict) -> str:
+    """Display string for a place dict, e.g. 'Pune, Maharashtra, India'."""
+    parts = [place["name"], place.get("admin1", ""), place.get("country", "")]
+    return ", ".join(p for p in parts if p)
+
+
+def fetch_weather_summary(location) -> dict:
+    """Current conditions + a short-term daily forecast for a location, which may be
+    a free-text string (geocoded here) or an already-resolved place dict (from
+    geocode()/search_locations()), to avoid re-geocoding a farmer's disambiguated pick."""
+    place = location if isinstance(location, dict) else geocode(location)
     response = requests.get(
         FORECAST_URL,
         params={
@@ -51,7 +78,7 @@ def fetch_weather_summary(location: str) -> dict:
     ]
 
     return {
-        "location": f"{place['name']}, {place['country']}".strip(", "),
+        "location": format_place(place),
         "current": {
             "temperature_c": current["temperature_2m"],
             "humidity_pct": current["relative_humidity_2m"],

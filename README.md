@@ -10,7 +10,7 @@ Built iteratively/incrementally:
    tomato diseases (PlantVillage dataset), with train/val evaluation. 92.1% val accuracy.
 2. **Increment 2 (done):** LangGraph agent loop — clarifying questions on low-confidence predictions.
 3. **Increment 3 (done):** Add local weather context (Open-Meteo) to the agent's reasoning.
-4. **Increment 4:** Treatment plan generation (Groq LLM), Streamlit frontend, SQLite scan history.
+4. **Increment 4 (done):** Treatment plan generation, Streamlit frontend, SQLite scan history.
 
 ## Setup (Increment 1)
 
@@ -64,13 +64,29 @@ city name) and reasons about whether those conditions will accelerate or slow di
 spread, plus one piece of monitoring advice. Healthy diagnoses and high-confidence
 predictions each skip their respective extra step.
 
+## Setup (Increment 4)
+
+```bash
+streamlit run app.py
+```
+
+Opens a browser UI: upload a leaf photo, type your farm's location (live suggestions
+via Open-Meteo's geocoding), and click Diagnose. Runs the full agent loop (classify ->
+clarify if needed -> weather -> risk -> treatment plan) and shows each step. Every
+completed scan is saved to a local SQLite DB (`db/scans.db`) and browsable in the
+History tab. The treatment plan covers both organic/home remedies and generic
+(non-brand) chemical options in metric dosages, with a disclaimer to confirm locally
+before applying chemicals.
+
 ## Project layout
 
 ```
-src/krishi_mitra/    shared config, classifier inference, agent graph, weather -- importable as a package
-scripts/             standalone entry-point scripts (data prep, training, agent CLI)
-data/raw/            downloaded dataset (gitignored)
-data/processed/      train/val split used for training (gitignored)
-models/              saved model + class name mapping (gitignored)
-outputs/             metrics, plots (gitignored)
+app.py                Streamlit frontend (Increment 4)
+src/krishi_mitra/     shared config, classifier inference, agent graph, weather, db -- importable as a package
+scripts/              standalone entry-point scripts (data prep, training, agent CLI)
+data/raw/             downloaded dataset (gitignored)
+data/processed/       train/val split used for training (gitignored)
+models/               saved model + class name mapping (gitignored)
+outputs/              metrics, plots (gitignored)
+db/                   SQLite scan history + uploaded photos (gitignored)
 ```

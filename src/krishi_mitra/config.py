@@ -14,6 +14,10 @@ VAL_DIR = PROCESSED_DIR / "val"
 MODELS_DIR = PROJECT_ROOT / "models"
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 
+DB_DIR = PROJECT_ROOT / "db"
+DB_PATH = DB_DIR / "scans.db"
+UPLOADS_DIR = DB_DIR / "uploads"
+
 # Canonical PlantVillage tomato class names (as used in the "color" split of
 # the abdallahalidev/plantvillage-dataset Kaggle mirror). prepare_data.py
 # matches folders to these names case/underscore-insensitively, since some
@@ -56,3 +60,9 @@ GROQ_MODEL = "openai/gpt-oss-120b"
 
 # Increment 3: weather context
 FORECAST_DAYS = 3
+
+# Increment 4: treatment plan + frontend + storage
+TREATMENT_DISCLAIMER = (
+    "This is general guidance, not a substitute for advice from your local agricultural "
+    "extension officer -- confirm chemical products and dosages locally before applying."
+)

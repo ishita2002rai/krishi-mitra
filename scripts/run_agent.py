@@ -1,7 +1,7 @@
 """CLI demo for the agent loop: classify a tomato leaf photo, ask one
 clarifying question if the classifier isn't confident (Increment 2), then --
-for any non-healthy diagnosis -- fetch local weather and assess disease-spread
-risk (Increment 3).
+for any non-healthy diagnosis -- fetch local weather, assess disease-spread
+risk (Increment 3), and generate a treatment plan (Increment 4).
 
 Usage:
     python scripts/run_agent.py path/to/leaf.jpg "Pune, India"
@@ -42,6 +42,9 @@ def main():
     if state.get("weather"):
         print(f"\n{format_summary(state['weather'])}")
         print(f"\nRisk assessment: {state['risk_assessment']}")
+
+    if state.get("treatment_plan"):
+        print(f"\nTreatment plan:\n{state['treatment_plan']}")
 
 
 if __name__ == "__main__":
