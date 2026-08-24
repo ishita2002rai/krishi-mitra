@@ -31,8 +31,11 @@ Cross-crop classes are easy to tell apart (many at F1 1.00 -- an apple leaf and 
 leaf don't look alike). Almost all the remaining confusion is *within* tomato's own
 10 sub-classes, the visually similar diseases first trained on: Target Spot (F1 0.83)
 and Early blight (F1 0.88) are still the hardest pair, plus Potato___healthy (F1 0.89,
-only 30 validation images). Full breakdown in `outputs/metrics.json`, confusion matrix
-in `outputs/confusion_matrix.png`.
+only 30 validation images). Full per-class breakdown in `outputs/metrics.json`.
+
+![Confusion matrix](outputs/confusion_matrix.png)
+
+![Training accuracy and loss curves](outputs/training_history.png)
 
 ## Tech stack
 
