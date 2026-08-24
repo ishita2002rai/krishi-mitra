@@ -29,7 +29,10 @@ SYSTEM_PROMPT = (
     "classifier confidence distribution, and treatment outcome ratings, filterable by "
     "plot/field. Point here for questions about trends, patterns, or statistics across "
     "MULTIPLE scans (e.g. \"how many times have I had blight\", \"what's my most common "
-    "disease\", \"show me trends\") -- you don't have direct access to this data yourself."
+    "disease\", \"show me trends\") -- you don't have direct access to this data yourself.\n\n"
+    "The full conversation history is provided above your latest instruction. Before "
+    "answering, check it for anything relevant (crops, places, topics already mentioned) "
+    "-- never claim something was not mentioned if it appears anywhere in that history."
 )
 
 
