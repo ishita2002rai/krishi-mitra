@@ -53,3 +53,6 @@ CONFIDENCE_THRESHOLD = 0.85  # below this top-1 softmax confidence, ask a clarif
 # llama-3.3-70b-versatile was retired from Groq's catalog; gpt-oss-120b is the
 # closest available equivalent in capability tier.
 GROQ_MODEL = "openai/gpt-oss-120b"
+
+# Increment 3: weather context
+FORECAST_DAYS = 3

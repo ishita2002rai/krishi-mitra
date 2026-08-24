@@ -9,7 +9,7 @@ Built iteratively/incrementally:
 1. **Increment 1 (done):** MobileNetV2 transfer-learning classifier for
    tomato diseases (PlantVillage dataset), with train/val evaluation. 92.1% val accuracy.
 2. **Increment 2 (done):** LangGraph agent loop — clarifying questions on low-confidence predictions.
-3. **Increment 3:** Add local weather context (Open-Meteo) to the agent's reasoning.
+3. **Increment 3 (done):** Add local weather context (Open-Meteo) to the agent's reasoning.
 4. **Increment 4:** Treatment plan generation (Groq LLM), Streamlit frontend, SQLite scan history.
 
 ## Setup (Increment 1)
@@ -45,25 +45,29 @@ python scripts/train_classifier.py
 - `outputs/training_history.png`
 - `data/processed/split_counts.json` — per-class train/val image counts
 
-## Setup (Increment 2)
+## Setup (Increments 2-3)
 
 ```bash
 # Get a free Groq API key from https://console.groq.com -> API Keys
 # and add it to .env (paste with a text editor -- never share this key in chat/logs):
 #   GROQ_API_KEY=...
+# No key needed for weather -- Open-Meteo is free and keyless.
 
-python scripts/run_agent.py path/to/leaf_photo.jpg
+python scripts/run_agent.py path/to/leaf_photo.jpg "Pune, India"
 ```
 
 The agent classifies the photo (Increment 1's model). If the top prediction is below
 85% confidence, it asks one clarifying question via Groq, takes your answer on the CLI,
-and gives a final diagnosis + reasoning. High-confidence predictions skip the
-clarifying question entirely.
+and gives a final diagnosis + reasoning. For any non-healthy diagnosis, it then fetches
+current + 3-day forecast weather for the given location (Open-Meteo, geocoded from the
+city name) and reasons about whether those conditions will accelerate or slow disease
+spread, plus one piece of monitoring advice. Healthy diagnoses and high-confidence
+predictions each skip their respective extra step.
 
 ## Project layout
 
 ```
-src/krishi_mitra/    shared config, classifier inference, agent graph -- importable as a package
+src/krishi_mitra/    shared config, classifier inference, agent graph, weather -- importable as a package
 scripts/             standalone entry-point scripts (data prep, training, agent CLI)
 data/raw/            downloaded dataset (gitignored)
 data/processed/      train/val split used for training (gitignored)

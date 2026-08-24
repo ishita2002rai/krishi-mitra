@@ -1,14 +1,17 @@
-"""LangGraph agent loop for Increment 2: classify a leaf photo, and if the top
-prediction isn't confident enough, ask one clarifying question before
-committing to a diagnosis.
+"""LangGraph agent loop: classify a leaf photo, ask one clarifying question if
+the top prediction isn't confident enough (Increment 2), then -- for any
+non-healthy diagnosis -- fetch local weather and reason about disease-spread
+risk (Increment 3).
 
 Two-pass usage (see scripts/run_agent.py):
     graph = build_graph()
-    state = graph.invoke({"image_path": path})
+    state = graph.invoke({"image_path": path, "location": "Pune, India"})
     if not state.get("diagnosis"):
         state["user_answer"] = input(state["clarifying_question"] + " ")
         state = graph.invoke(state)
     print(state["diagnosis"], state["reasoning"])
+    if state.get("risk_assessment"):
+        print(state["risk_assessment"])
 """
 
 import os
@@ -19,16 +22,20 @@ from langgraph.graph import END, StateGraph
 
 from krishi_mitra.classifier import predict_topk
 from krishi_mitra.config import CONFIDENCE_THRESHOLD, GROQ_MODEL, TOP_K, display_name
+from krishi_mitra.weather import fetch_weather_summary, format_summary
 
 
 class AgentState(TypedDict, total=False):
     image_path: str
+    location: str
     top_k: List[dict]
     confidence: float
     clarifying_question: Optional[str]
     user_answer: Optional[str]
     diagnosis: Optional[str]
     reasoning: Optional[str]
+    weather: Optional[dict]
+    risk_assessment: Optional[str]
 
 
 def _llm() -> ChatGroq:
@@ -104,6 +111,24 @@ def refine_with_answer(state: AgentState) -> dict:
     return {"diagnosis": diagnosis, "reasoning": reasoning}
 
 
+def gather_weather(state: AgentState) -> dict:
+    weather = fetch_weather_summary(state["location"])
+    return {"weather": weather}
+
+
+def assess_risk(state: AgentState) -> dict:
+    prompt = (
+        "You are an agronomy assistant. A tomato plant was diagnosed with "
+        f"{display_name(state['diagnosis'])}.\n\n"
+        f"{format_summary(state['weather'])}\n\n"
+        "In 2-3 sentences, assess whether these current and upcoming weather conditions are "
+        "likely to accelerate or slow the spread of this disease, and give one piece of "
+        "immediate monitoring advice. Do not give a full treatment plan."
+    )
+    risk_assessment = _llm().invoke(prompt).content.strip()
+    return {"risk_assessment": risk_assessment}
+
+
 def _route_after_classify(state: AgentState) -> str:
     return "finalize_high_confidence" if state["confidence"] >= CONFIDENCE_THRESHOLD else "ask_clarifying_question"
 
@@ -112,12 +137,18 @@ def _route_entry(state: AgentState) -> str:
     return "refine_with_answer" if state.get("user_answer") else "classify"
 
 
+def _route_after_diagnosis(state: AgentState) -> str:
+    return "skip" if "healthy" in state["diagnosis"].lower() else "gather_weather"
+
+
 def build_graph():
     graph = StateGraph(AgentState)
     graph.add_node("classify", classify)
     graph.add_node("finalize_high_confidence", finalize_high_confidence)
     graph.add_node("ask_clarifying_question", ask_clarifying_question)
     graph.add_node("refine_with_answer", refine_with_answer)
+    graph.add_node("gather_weather", gather_weather)
+    graph.add_node("assess_risk", assess_risk)
 
     graph.set_conditional_entry_point(
         _route_entry, {"classify": "classify", "refine_with_answer": "refine_with_answer"}
@@ -130,7 +161,13 @@ def build_graph():
             "ask_clarifying_question": "ask_clarifying_question",
         },
     )
-    graph.add_edge("finalize_high_confidence", END)
+    graph.add_conditional_edges(
+        "finalize_high_confidence", _route_after_diagnosis, {"gather_weather": "gather_weather", "skip": END}
+    )
+    graph.add_conditional_edges(
+        "refine_with_answer", _route_after_diagnosis, {"gather_weather": "gather_weather", "skip": END}
+    )
     graph.add_edge("ask_clarifying_question", END)
-    graph.add_edge("refine_with_answer", END)
+    graph.add_edge("gather_weather", "assess_risk")
+    graph.add_edge("assess_risk", END)
     return graph.compile()
