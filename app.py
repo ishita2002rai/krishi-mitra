@@ -18,7 +18,7 @@ from streamlit_searchbox import st_searchbox
 from krishi_mitra.agent import build_graph
 from krishi_mitra.chat import get_chat_reply
 from krishi_mitra.config import SUPPORTED_CROPS, display_name
-from krishi_mitra.db import get_history, save_image, save_scan, update_outcome
+from krishi_mitra.db import authenticate, create_user, get_history, save_image, save_scan, update_outcome
 from krishi_mitra.report import build_scan_report_pdf
 from krishi_mitra.weather import format_place, format_summary, search_locations
 
@@ -38,6 +38,46 @@ def reset_scan():
         st.session_state.pop(key, None)
 
 
+def current_farmer_id():
+    return st.session_state["user"]["id"]
+
+
+def login_page():
+    """Shown instead of the app until a farmer logs in or signs up."""
+    st.subheader("Welcome! Please log in to see your own scans.")
+    login_tab, signup_tab = st.tabs(["Log in", "Sign up"])
+    with login_tab:
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            if st.form_submit_button("Log in", type="primary"):
+                user = authenticate(username, password)
+                if user:
+                    st.session_state["user"] = user
+                    st.rerun()
+                else:
+                    st.error("Wrong username or password.")
+    with signup_tab:
+        with st.form("signup_form"):
+            username = st.text_input("Choose a username", help="3-30 letters, numbers or underscore")
+            password = st.text_input("Choose a password", type="password", help="At least 6 characters")
+            confirm = st.text_input("Confirm password", type="password")
+            if st.form_submit_button("Create account", type="primary"):
+                if password != confirm:
+                    st.error("The two passwords don't match.")
+                else:
+                    try:
+                        st.session_state["user"] = create_user(username, password)
+                        st.rerun()
+                    except ValueError as e:
+                        st.error(str(e))
+
+
+def logout():
+    for key in ("user", "agent_state", "scan_saved", "chat_messages"):
+        st.session_state.pop(key, None)
+
+
 def run_step(state, spinner_text):
     """Invoke the agent graph, returning (new_state, None) on success or
     (None, error_message) on failure -- never lets a raw traceback reach the UI."""
@@ -50,12 +90,14 @@ def run_step(state, spinner_text):
         return None, f"Something went wrong: {e}"
 
 
-def _pdf_download(scan: dict, key: str):
+def _pdf_download(scan: dict, key: str, tab: str):
+    # Streamlit renders every tab on each run, so the same scan can get a download
+    # button in both Diagnose and History -- the widget key must include the tab.
     try:
         pdf_bytes = build_scan_report_pdf(scan)
         st.download_button(
             "Download PDF report", data=pdf_bytes, file_name=f"krishi_mitra_{key}.pdf",
-            mime="application/pdf", key=f"pdf_{key}",
+            mime="application/pdf", key=f"pdf_{tab}_{key}",
         )
     except Exception as e:
         st.caption(f"Could not generate PDF: {e}")
@@ -84,7 +126,7 @@ def render_result(state, plot_name=None):
 
     if not st.session_state.get("scan_saved"):
         try:
-            scan_id = save_scan(state, plot_name=plot_name)
+            scan_id = save_scan(state, plot_name=plot_name, farmer_id=current_farmer_id())
             st.session_state["scan_saved"] = scan_id
             st.caption(f"Saved to scan history ({scan_id[:8]}).")
         except Exception as e:
@@ -104,6 +146,7 @@ def render_result(state, plot_name=None):
             "treatment_plan": state.get("treatment_plan"),
         },
         key=scan_id[:8],
+        tab="diagnose",
     )
 
 
@@ -164,7 +207,7 @@ def diagnose_tab():
 
 
 def history_tab():
-    history = get_history()
+    history = get_history(farmer_id=current_farmer_id())
     if not history:
         st.write("No scans yet.")
         return
@@ -198,10 +241,10 @@ def history_tab():
                     )
                     note = st.text_input("Notes (optional)", key=f"note_{scan['id']}")
                     if st.button("Save feedback", key=f"save_{scan['id']}"):
-                        update_outcome(scan["id"], rating, note)
+                        update_outcome(scan["id"], rating, note, farmer_id=current_farmer_id())
                         st.rerun()
 
-            _pdf_download(scan, key=scan["id"][:8])
+            _pdf_download(scan, key=scan["id"][:8], tab="history")
 
 
 def _interactive_bar(counts: pd.Series, label_title: str, value_title: str = "Count", sort=None):
@@ -244,7 +287,7 @@ def _interactive_line(counts: pd.Series, x_title: str, value_title: str = "Count
 
 
 def dashboard_tab():
-    history = get_history()
+    history = get_history(farmer_id=current_farmer_id())
     if not history:
         st.write("No scans yet -- diagnose a leaf first to see analytics here.")
         return
@@ -350,6 +393,14 @@ def chat_widget():
 
 st.title("\U0001f331 Krishi-Mitra")
 st.caption("Agentic crop advisory assistant -- upload a leaf photo to get started.")
+
+if "user" not in st.session_state:
+    login_page()
+    st.stop()
+
+user_col, logout_col = st.columns([4, 1])
+user_col.caption(f"Logged in as **{st.session_state['user']['username']}**")
+logout_col.button("Log out", on_click=logout)
 
 diagnose, dashboard, history = st.tabs(["Diagnose", "Dashboard", "History"])
 with diagnose:
